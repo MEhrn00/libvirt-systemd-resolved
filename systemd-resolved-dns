@@ -291,10 +291,12 @@ def run(network: str = None, operation: str = None, sub_op: str = "-"):
     # TODO: Check with upstream and check if it can be setup automatically
     # TODO: Check why domain name is not validated in libvirt
     if operation == "started" or operation == "updated":
+        # Set the DNS server to the configured DNS server in the network config
         logging.info(
             f"Setting DNS={libvirt_net_gw_ip} on "
             f"Interface={libvirt_net_bridge_interface}"
         )
+
         try:
             run_resolvectl_hook(
                 subcommand="dns",
@@ -308,6 +310,7 @@ def run(network: str = None, operation: str = None, sub_op: str = "-"):
                 f"on Interface={libvirt_net_bridge_interface}"
             )
 
+        # Set the routing domain
         logging.info(
             f"Set RoutingDomain=~{libvirt_net_domain} "
             f"on Interface={libvirt_net_bridge_interface}"
@@ -324,6 +327,71 @@ def run(network: str = None, operation: str = None, sub_op: str = "-"):
                 f"Failed to set RoutingDomain=~{libvirt_net_domain} "
                 f"on Interface={libvirt_net_bridge_interface}"
             )
+
+        # Disable mDNS on the interface
+        logging.info(
+            f"Disabling mDNS on Interface={libvirt_net_bridge_interface}"
+        )
+        try:
+            run_resolvectl_hook(
+                subcommand="mdns",
+                interface=libvirt_net_bridge_interface,
+                value="no"
+            )
+        except (LibVirtHookResolvectlError, ValueError) as e:
+            logging.error(str(e))
+            logging.error(
+                f"Failed to disable mDNS on Interface={libvirt_net_bridge_interface}"
+            )
+
+        # Disable DNSOverTLS on the interface
+        logging.info(
+            f"Disabling DNSOverTLS on Interface={libvirt_net_bridge_interface}"
+        )
+        try:
+            run_resolvectl_hook(
+                subcommand="dnsovertls",
+                interface=libvirt_net_bridge_interface,
+                value="no"
+            )
+        except (LibVirtHookResolvectlError, ValueError) as e:
+            logging.error(str(e))
+            logging.error(
+                f"Failed to disable DNSOverTLS on Interface={libvirt_net_bridge_interface}"
+            )
+
+        # Disable DNSSEC on the interface
+        logging.info(
+            f"Disabling DNSSEC on Interface={libvirt_net_bridge_interface}"
+        )
+        try:
+            run_resolvectl_hook(
+                subcommand="dnssec",
+                interface=libvirt_net_bridge_interface,
+                value="no"
+            )
+        except (LibVirtHookResolvectlError, ValueError) as e:
+            logging.error(str(e))
+            logging.error(
+                f"Failed to disable DNSSEC on Interface={libvirt_net_bridge_interface}"
+            )
+
+        # Disable LLMNR on the interface
+        logging.info(
+            f"Disabling LLMNR on Interface={libvirt_net_bridge_interface}"
+        )
+        try:
+            run_resolvectl_hook(
+                subcommand="llmnr",
+                interface=libvirt_net_bridge_interface,
+                value="no"
+            )
+        except (LibVirtHookResolvectlError, ValueError) as e:
+            logging.error(str(e))
+            logging.error(
+                f"Failed to disable LLMNR on Interface={libvirt_net_bridge_interface}"
+            )
+
     else:
         logging.info(f"Unsupported operation {operation}")
         return
